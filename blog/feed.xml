@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<title>AirVantage Open Source Blog</title>
+		<description>AirVantage Open Source Blog</description>
+		<link>http://airvantage.github.io</link>
+		<atom:link href="http://airvantage.github.io/blog/feed.xml" rel="self" type="application/rss+xml" />
+		
+			<item>
+				<title>Introducing Guirlande</title>
+				<description>&lt;h3 id=&quot;jenkinsci--rpi--led-strip--fireworks-&quot;&gt;JenkinsCI + RPi + LED strip =&amp;gt; Fireworks !&lt;/h3&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://pbs.twimg.com/media/BIIkdD9CUAA9qly.jpg:thumb&quot; alt=&quot;guirlande live&quot; /&gt;&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;ul id=&quot;markdown-toc&quot;&gt;
+  &lt;li&gt;&lt;a href=&quot;#jenkinsci--rpi--led-strip--fireworks-&quot;&gt;JenkinsCI + RPi + LED strip =&amp;gt; Fireworks !&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#mihini-application-led-controller-instructions&quot;&gt;Mihini application (led-controller) instructions&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#nodejs-application-guirlandejs-instructions&quot;&gt;Node.js application (guirlande.js) instructions&lt;/a&gt;    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#what-does-it-do-&quot;&gt;What does it do ?&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#instructions&quot;&gt;Instructions&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Guirlande is the French for “fairy light”.
+It’s a small M2M / IoT project that checks Jenkins CI builds and displays information related to their status on an LED strip driven by a Mihini Lua embedded application running on a Raspbery Pi.&lt;/p&gt;
+
+&lt;h2 id=&quot;mihini-application-led-controller-instructions&quot;&gt;Mihini application (led-controller) instructions&lt;/h2&gt;
+
+&lt;p&gt;You will need a Raspberry Pi (running e.g Raspbian) and an LPD8806 RGB LED strip (we are using http://www.adafruit.com/products/306)&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The RGB LED strip will be accessed over SPI, so you will need to have SPI support.&lt;br /&gt;
+You should either use a distribution already providing SPI, or follow the instructions here http://www.brianhensley.net/2012/07/getting-spi-working-on-raspberry-pi.html, including the unblacklisting stuff.&lt;/li&gt;
+  &lt;li&gt;For all the instructions concerning the wiring of the strip to your Pi, you should follow http://learn.adafruit.com/light-painting-with-raspberry-pi/overview&lt;/li&gt;
+  &lt;li&gt;In order to run the Mihini application controlling the RGB LED strip, you need to install Mihini on your RaspberryPi: http://wiki.eclipse.org/Mihini/Run_Mihini_on_an_Open_Hardware_platform&lt;/li&gt;
+  &lt;li&gt;You will need to associate your deviceId of choice to your Pi, so as commands being sent by the bot polling Jenkins are correctly sent to &lt;em&gt;your&lt;/em&gt; system.&lt;br /&gt;
+Once Mihini is running on the Pi, you can change the deviceId by doing:
+    &lt;ul&gt;
+      &lt;li&gt;&lt;code&gt;telnet localhost 2000&lt;/code&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;code&gt;agent.config.agent.deviceId = &quot;yourUniqueId&quot;&lt;/code&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;code&gt;^D&lt;/code&gt;&lt;br /&gt;
+  You should then restart Mihini for the modification to be applied.  &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Launch the application using Koneki IDE, in a very similar manner to what is explained in the wiki page mentioned earlier.&lt;br /&gt;
+Make sure to launch the Mihini app (main.lua) as &lt;em&gt;root&lt;/em&gt;. This is done by using root credentials when configuring your remote connection in Eclipse Koneki IDE.&lt;br /&gt;
+Of course, you can also launch main.lua application by hand on the Raspberry Pi, but this is likely going to be more SCP roundtrips between your system and the Pi if you still want to benefit from the Koneki IDE magic :)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;nodejs-application-guirlandejs-instructions&quot;&gt;Node.js application (guirlande.js) instructions&lt;/h2&gt;
+
+&lt;h4 id=&quot;what-does-it-do-&quot;&gt;What does it do ?&lt;/h4&gt;
+&lt;p&gt;Basically it polls &lt;em&gt;x&lt;/em&gt; Jenkins builds status, checks the “claim” state (see Claim report Jenkins plugin) and sends a command to the Mihini application to update the LED strip. 
+The 64 LED strip will be split in &lt;em&gt;x&lt;/em&gt; parts. Each part being split like this :&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;x * 3/4 for the build status&lt;/li&gt;
+  &lt;li&gt;x * 1/4 for the “claim” state&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;instructions&quot;&gt;Instructions&lt;/h4&gt;
+&lt;p&gt;Just clone this repo, get the necessary dependencies :&lt;br /&gt;
+&lt;code&gt;npm install&lt;/code&gt;  &lt;/p&gt;
+
+&lt;p&gt;Create a &lt;em&gt;config.json&lt;/em&gt; based on the template to : &lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Change the Jenkins builds urls&lt;/li&gt;
+  &lt;li&gt;Use your own m3da server instead of the default one hosted on m2m.eclipse.org&lt;/li&gt;
+  &lt;li&gt;Set the DeviceId  you already used in the Mihini application&lt;/li&gt;
+  &lt;li&gt;Tweak the polling period&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;And and launch it :&lt;br /&gt;
+ &lt;code&gt;node guirlande.js&lt;/code&gt;&lt;/p&gt;
+</description>
+				<pubDate>Wed, 26 Jun 2013 00:00:00 +0200</pubDate>
+				<link>http://airvantage.github.io/blog/2013/06/26/introducing-guirlande</link>
+				<guid isPermaLink="true">http://airvantage.github.io/blog/2013/06/26/introducing-guirlande</guid>
+			</item>
+		
+	</channel>
+</rss>
